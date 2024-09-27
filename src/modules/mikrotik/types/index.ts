@@ -1,0 +1,1 @@
+export { IPListType } from './ipList.type'
