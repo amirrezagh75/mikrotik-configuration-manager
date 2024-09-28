@@ -2,18 +2,18 @@ import { ResponseDto } from "../../../common/DTO";
 import { MikrotikService } from "./mikrotik.service";
 
 export class MikrotikTunnelService extends MikrotikService {
-    public async createGreTunnel(localAddress: string, remoteAddress: string, name: string): Promise<ResponseDto> {
+    public async createGreTunnel(remoteAddress: string, name: string): Promise<ResponseDto> {
         try {
             const connection = await this.connect()
             if (connection.status != 200)
                 return { data: '', status: connection.status, message: connection.message }
 
             const response = await this.client.write('/interface/gre/add', [
-                `=name=${name}`,
+                `=name=gre_tunnel_to_${name}_api`,
                 `=remote-address=${remoteAddress}`
             ]);
 
-            console.log(`GRE Tunnel ${name} created successfully`, response);
+            console.log(`GRE Tunnel gre_tunnel_to_${name}_api created successfully`, response);
 
             this.disconnect()
 
@@ -28,18 +28,18 @@ export class MikrotikTunnelService extends MikrotikService {
         }
     }
 
-    public async createEoipTunnel(name: string, localAddress: string, remoteAddress: string, tunnelId: number) {
+    public async createEoipTunnel(remoteAddress: string, name: string, tunnelId: number) {
         try {
             const connection = await this.connect()
             if (connection.status != 200)
                 return { data: '', status: connection.status, message: connection.message }
 
             const response = await this.client.write('/interface/eoip/add', [
-                `=name=${name}`,
+                `=name=eoip_tunnel_to_${name}_api`,
                 `=remote-address=${remoteAddress}`,
                 `=tunnel-id=${tunnelId}`
             ]);
-            console.log(`EoIP Tunnel ${name} created successfully`);
+            console.log(`EoIP Tunnel eoip_tunnel_to_${name}_api created successfully`);
 
             this.disconnect()
 
@@ -75,18 +75,18 @@ export class MikrotikTunnelService extends MikrotikService {
         }
     }
 
-    public async createVxlanTunnel(name: string, vni: number, port: number) {
+    public async createVxlanTunnel(name: string, port: number, vni: number) {
         try {
             const connection = await this.connect()
             if (connection.status != 200)
                 return { data: '', status: connection.status, message: connection.message }
 
             const response = await this.client.write('/interface/vxlan/add', [
-                `=name=${name}`,
+                `=name=vxlan_tunnel_to_${name}_api`,
                 `=vni=${vni}`,
                 `=port=${port}`
             ]);
-            console.log(`VXLAN Tunnel ${name} created successfully`);
+            console.log(`VXLAN Tunnel vxlan_tunnel_to_${name}_api created successfully`);
 
             this.disconnect()
 
@@ -100,7 +100,7 @@ export class MikrotikTunnelService extends MikrotikService {
     }
 
 
-    private async addVtepToVxlan(vxlanName: string, remoteIp: string, port: string) {
+    public async addVtepToVxlan(remoteIp: string, vxlanName: string,  port: number) {
         try {
             const connection = await this.connect()
             if (connection.status != 200)
@@ -112,11 +112,13 @@ export class MikrotikTunnelService extends MikrotikService {
                 `=port=${port}`
             ]);
             console.log(`VTEP added to VXLAN ${vxlanName}`);
-            
+            this.disconnect()
+
             return { data: response, status: 200, message: 'ran successfully' };
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikTunnelService > addVtepToVxlan > error: \n${error}`)
+            this.disconnect()
             return { data: [], status: 500, message: 'failed to run command' }
         }
     }
