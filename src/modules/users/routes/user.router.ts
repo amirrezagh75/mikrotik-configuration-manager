@@ -1,7 +1,7 @@
 import express from 'express';
 import { Request, Response } from 'express'
 import { UserServices } from '../services';
-import { RequestInputSchema, RequestInterface } from '../types'
+import { RequestInputSchema, CreateTunnelSchema, CreateTunnelInterface } from '../types'
 import { validateRequest } from '../../../common/middlewares'
 export const userRouter = express.Router();
 
@@ -26,11 +26,11 @@ userRouter.post('/validate', validateRequest(RequestInputSchema), async (req: Re
     res.json(validationResponse);
 });
 
-userRouter.post('/createGre', validateRequest(RequestInputSchema),async (req: Request, res: Response) => {
-    const { username, password, address, port } = req.body;
+userRouter.post('/createTunnel', validateRequest(CreateTunnelSchema),async (req: Request, res: Response) => {
+    const body: CreateTunnelInterface = req.body;
 
     const userService = new UserServices();
-    const validationResponse = await userService.validateConnection({ username, password, address, port });
+    const tunnelCreationRes = await userService.createTunnel(body);
 
-    res.json(validationResponse);
+    res.json(tunnelCreationRes);
 } )
