@@ -21,7 +21,7 @@ export const generateRandomIP= (ipClass: IPClass = 'A'): string => {
     }
     const secondOctet = Math.floor(Math.random() * 256);
     const thirdOctet = Math.floor(Math.random() * 256);
-    const fourthOctet = Math.floor(Math.random() * 256);
+    const fourthOctet = 0;
 
     return `${firstOctet}.${secondOctet}.${thirdOctet}.${fourthOctet}`;
 }
