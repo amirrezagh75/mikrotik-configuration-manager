@@ -5,7 +5,7 @@ export class MikrotikUtilService extends MikrotikService {
         try {
             const connection = await this.connect()
             if (connection.status != 200)
-                return { data: '', status: connection.status, message: connection.message }
+                return { data: [], status: connection.status, message: connection.message }
 
             const response = await this.client.write('/ip/address/print');
             return { data: response, status: 200, message: 'ran successfully' }
