@@ -2,9 +2,11 @@ import { ResponseDto } from '../../../common/DTO'
 import { CreateTunnelInterface, PublicOrLocalIp, RequestInterface } from '../types'
 import { MikrotikService, MikrotikTunnelService, MikrotikUtilService } from '../../mikrotik/services'
 import { generateRandomIP, replaceLastSectionOfIp, toCamelCase } from '../../../utils'
+import { CreateVpnInterface } from '../types/createVpn.interface'
 
 export class UserServices {
-    getIpAddresses = async (input: RequestInterface): Promise<ResponseDto> => {
+    
+    public getIpAddresses = async (input: RequestInterface): Promise<ResponseDto> => {
         const mkUtilService = new MikrotikUtilService(input.address, input.port, input.username, input.password);
         const ipList = await mkUtilService.getRouterIpAddresses();
 
@@ -15,13 +17,13 @@ export class UserServices {
         return { ...ipList };
     }
 
-    validateConnection = async (input: RequestInterface) => {
+    public validateConnection = async (input: RequestInterface) => {
         const mkService = new MikrotikService(input.address, input.port, input.username, input.password);
 
         return await mkService.validateConnection()
     }
 
-    createTunnel = async (input: CreateTunnelInterface) => {
+    public createTunnel = async (input: CreateTunnelInterface) => {
         const source = input.source;
         const destination = input.destination;
 
@@ -263,7 +265,7 @@ export class UserServices {
                 }
 
                 sourceIsValid = false,
-                    destinationIsValid = false
+                destinationIsValid = false
             }
             return { data: randomIp, status: 200, message: 'Available IP found' };
         } catch (error) {
@@ -272,4 +274,28 @@ export class UserServices {
         }
         return { data: '', status: 500, message: 'Could not find available IP' };
     };
+
+    public async createVpn(input:CreateVpnInterface){
+        const vpnType = input.vpnType
+
+        switch(vpnType){
+            case 'openVpn':
+                return { data:{} , status: 200, message:'we are working on new feature to create openVpn' }
+            case 'l2tp':
+                return { data:{} , status: 200, message:'we are working on new feature to create l2tp' }
+            case 'ppp':
+                return { data:{} , status: 200, message:'we are working on new feature to create ppp' }
+            case 'pptp':
+                return { data:{} , status: 200, message:'we are working on new feature to create pptp' }
+        }
+    }
+
+    private async createOpenVpn(input:CreateVpnInterface){}
+
+    private async createL2tp(input:CreateVpnInterface){}
+
+    private async createPpp(input:CreateVpnInterface){}
+
+    private async createPptp(input:CreateVpnInterface){}
+    
 }
