@@ -15,14 +15,14 @@ export class MikrotikTunnelService extends MikrotikService {
 
             console.log(`GRE Tunnel gre_tunnel_to_${name}_api created successfully`, response);
 
-            this.disconnect()
+            await this.disconnect()
 
             return { data: response, status: 200, message: 'ran successfully' }
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikTunnelService > createGreTunnel > error: \n${error}`)
 
-            this.disconnect()
+            await this.disconnect()
 
             return { data: [], status: 500, message: 'failed to run command' }
         }
@@ -41,13 +41,13 @@ export class MikrotikTunnelService extends MikrotikService {
             ]);
             console.log(`EoIP Tunnel eoip_tunnel_to_${name}_api created successfully`);
 
-            this.disconnect()
+            await this.disconnect()
 
             return { data: response, status: 200, message: 'ran successfully' }
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikTunnelService > createEoipTunnel > error: \n${error}`)
-            this.disconnect()
+            await this.disconnect()
             return { data: [], status: 500, message: 'failed to run command' }
         }
     }
@@ -64,13 +64,13 @@ export class MikrotikTunnelService extends MikrotikService {
             ]);
             console.log(`IP Address ${ipAddress}/${netmask} set on interface ${interfaceName}`);
 
-            this.disconnect()
+            await this.disconnect()
 
             return { data: response, status: 200, message: 'ran successfully' };
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikTunnelService > setIpAddress > error: \n${error}`)
-            this.disconnect()
+            await this.disconnect()
             return { data: [], status: 500, message: 'failed to run command' }
         }
     }
@@ -88,13 +88,13 @@ export class MikrotikTunnelService extends MikrotikService {
             ]);
             console.log(`VXLAN Tunnel vxlan_tunnel_to_${name}_api created successfully`);
 
-            this.disconnect()
+            await this.disconnect()
 
             return { data: response, status: 200, message: 'ran successfully' };
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikTunnelService > createVxlanTunnel > error: \n${error}`)
-            this.disconnect()
+            await this.disconnect()
             return { data: [], status: 500, message: 'failed to run command' }
         }
     }
@@ -112,13 +112,13 @@ export class MikrotikTunnelService extends MikrotikService {
                 `=port=${port}`
             ]);
             console.log(`VTEP added to VXLAN ${vxlanName}`);
-            this.disconnect()
+            await this.disconnect()
 
             return { data: response, status: 200, message: 'ran successfully' };
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikTunnelService > addVtepToVxlan > error: \n${error}`)
-            this.disconnect()
+            await this.disconnect()
             return { data: [], status: 500, message: 'failed to run command' }
         }
     }

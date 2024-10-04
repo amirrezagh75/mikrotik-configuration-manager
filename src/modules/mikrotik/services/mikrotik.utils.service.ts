@@ -16,7 +16,7 @@ export class MikrotikUtilService extends MikrotikService {
             console.error(`mikrotik > services > mikrotikUtilsService > getRouterIpAddresses > error: \n${error}`)
             return { data: [], status: 500, message: 'failed to run command' }
         } finally {
-            this.disconnect();
+            await this.disconnect();
         }
     }
 
@@ -110,7 +110,7 @@ export class MikrotikUtilService extends MikrotikService {
             console.error(`mikrotik > services > mikrotikUtilsService > getIpPoolList > error: \n${error}`);
             return { data: [], status: 500, message: 'failed to run command' };
         } finally {
-            this.disconnect(); 
+            await this.disconnect();
         }
     }
 
@@ -139,7 +139,7 @@ export class MikrotikUtilService extends MikrotikService {
             console.error(`mikrotik > services > mikrotikUtilsService > createIpPool > error: \n${error}`);
             return { data: [], status: 500, message: 'failed to run command' }
         } finally {
-            this.disconnect();
+            await this.disconnect();
         }
 
     }
@@ -158,7 +158,7 @@ export class MikrotikUtilService extends MikrotikService {
             console.error(`mikrotik > services > mikrotikUtilsService > getCertificates > error: \n${error}`)
             return { data: [], status: 500, message: 'failed to run command' }
         } finally {
-            this.disconnect();
+            await this.disconnect();
         }
         
     }
@@ -206,9 +206,7 @@ export class MikrotikUtilService extends MikrotikService {
             return { data: response, status: 200, message: 'ran successfully' }
 
         } catch (error) {
-            console.error(`mikrotik > services > mikrotikUtilsService > signCertificate > error: \n${error}`)
-            this.disconnect()
-            return { data: [], status: 500, message: 'failed to run command' }
+            await this.disconnect();
         }
     }
     
@@ -229,9 +227,7 @@ export class MikrotikUtilService extends MikrotikService {
             return { data: response, status: 200, message: 'ran successfully' }
 
         } catch (error) {
-            console.error(`mikrotik > services > mikrotikUtilsService > signCertificate > error: \n${error}`)
-            this.disconnect()
-            return { data: [], status: 500, message: 'failed to run command' }
+            await this.disconnect();
         }
     }
     
@@ -254,7 +250,7 @@ export class MikrotikUtilService extends MikrotikService {
             console.error(`mikrotik > services > mikrotikUtilsService > checkIpValidation > error: \n${error}`);
             return { data: null, status: 500, message: 'failed to run command' }
         } finally {
-            this.disconnect();
+            await this.disconnect();
         }
     }
 
