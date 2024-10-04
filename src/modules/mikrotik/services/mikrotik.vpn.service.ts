@@ -8,7 +8,7 @@ export class MikrotikVpnService extends MikrotikService {
             if (connection.status != 200)
                 return { data: '', status: connection.status, message: connection.message }
 
-            const response = await this.client.write('/interface/ovpn-server/server/set ', [
+            const response = await this.client.write('/interface/ovpn-server/server/set', [
                 `=enabled=yes`,
                 `=port=${input.port}`,
                 `=default-profile=${input.profileName}`,
@@ -16,16 +16,15 @@ export class MikrotikVpnService extends MikrotikService {
                 `=cipher=blowfish128,aes128-cbc,aes192-cbc,aes256-cbc`,
                 `=auth=sha1,md5`
             ]);
-            console.log(`open vpn configured successfully`);
-
-            this.disconnect()
-
-            return { data: response, status: 200, message: 'ran successfully' }
+            console.log(`open vpn configured successfully`)      
+             return { data: response, status: 200, message: 'ran successfully' }
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikUtilsService > OpenvpnConfig > error: \n${error}`)
-            this.disconnect()
+            await this.disconnect()
             return { data: [], status: 500, message: 'failed to run command' }
+        } finally{
+            await this.disconnect()
         }
     }
 
@@ -42,7 +41,7 @@ export class MikrotikVpnService extends MikrotikService {
             console.error(`mikrotik > services > mikrotikVpnService > listOfProfiles > error: \n${error}`)
             return { data: [], status: 500, message: 'failed to run command' }
         } finally {
-            this.disconnect();
+            await this.disconnect();
         }
     }
 
@@ -52,7 +51,7 @@ export class MikrotikVpnService extends MikrotikService {
             if (connection.status != 200)
                 return { data: '', status: connection.status, message: connection.message }
 
-            const response = await this.client.write('/ppp/profile/add ', [
+            const response = await this.client.write('/ppp/profile/add', [
                 `=name=${input.name}`,
                 `=local-address=${input.localAddress}`,
                 `=remote-address=${input.poolName}`,
@@ -60,13 +59,13 @@ export class MikrotikVpnService extends MikrotikService {
             ]);
             console.log(`new profile created successfully`);
 
-            this.disconnect()
+            await this.disconnect()
 
             return { data: response, status: 200, message: 'ran successfully' }
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikUtilsService > createNewProfile > error: \n${error}`)
-            this.disconnect()
+            await this.disconnect()
             return { data: [], status: 500, message: 'failed to run command' }
         }
     }
@@ -84,13 +83,13 @@ export class MikrotikVpnService extends MikrotikService {
             ]);
             console.log(`new secrete created successfully`);
 
-            this.disconnect()
+            await this.disconnect()
 
             return { data: response, status: 200, message: 'ran successfully' }
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikUtilsService > createNewSecrete > error: \n${error}`)
-            this.disconnect()
+            await this.disconnect()
             return { data: [], status: 500, message: 'failed to run command' }
         }
     }
@@ -108,7 +107,7 @@ export class MikrotikVpnService extends MikrotikService {
             console.error(`mikrotik > services > mikrotikVpnService > listOfSecretes > error: \n${error}`)
             return { data: [], status: 500, message: 'failed to run command' }
         } finally {
-            this.disconnect();
+            await this.disconnect();
         }
     }
 }
