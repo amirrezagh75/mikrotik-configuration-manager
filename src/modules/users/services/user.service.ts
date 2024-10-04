@@ -1,11 +1,11 @@
 import { ResponseDto } from '../../../common/DTO'
 import { CreateTunnelInterface, PublicOrLocalIp, RequestInterface } from '../types'
-import { MikrotikService, MikrotikTunnelService, MikrotikUtilService } from '../../mikrotik/services'
-import { generateRandomIP, replaceLastSectionOfIp, toCamelCase } from '../../../utils'
+import { MikrotikService, MikrotikTunnelService, MikrotikUtilService, MikrotikVpnService } from '../../mikrotik/services'
+import { generateRandomIP, openVpnTemplate, replaceLastSectionOfIp, toCamelCase } from '../../../utils'
 import { CreateVpnInterface } from '../types/createVpn.interface'
 
 export class UserServices {
-    
+
     public getIpAddresses = async (input: RequestInterface): Promise<ResponseDto> => {
         const mkUtilService = new MikrotikUtilService(input.address, input.port, input.username, input.password);
         const ipList = await mkUtilService.getRouterIpAddresses();
@@ -164,8 +164,8 @@ export class UserServices {
                         data: {}, status: 508,
                         message: `couldn't create GRE tunnel ${createVxlanSource.status != 200 ? 'source vxlan' : ''} ${createVxlanDestination.status != 200 ? "destination vxlan" : ""}`
                     };
-                
-                    const createVtepSource = await ipSelection.mkTunnelServiceSource.addVtepToVxlan(
+
+                const createVtepSource = await ipSelection.mkTunnelServiceSource.addVtepToVxlan(
                     destinationIp,
                     `vxlan_tunnel_to_${toCamelCase(destinationName.data)}_api`,
                     portNumber
@@ -265,7 +265,7 @@ export class UserServices {
                 }
 
                 sourceIsValid = false,
-                destinationIsValid = false
+                    destinationIsValid = false
             }
             return { data: randomIp, status: 200, message: 'Available IP found' };
         } catch (error) {
@@ -275,27 +275,195 @@ export class UserServices {
         return { data: '', status: 500, message: 'Could not find available IP' };
     };
 
-    public async createVpn(input:CreateVpnInterface){
+    public async createVpn(input: CreateVpnInterface): Promise<ResponseDto> {
         const vpnType = input.vpnType
+        const username = input.credential.username;
+        const password = input.credential.password;
+        const host = input.router.local?.address || input.router.public?.address!;
+        const port = input.router.local?.port || input.router.public?.port!;
 
-        switch(vpnType){
+        if (!username || !password)
+            return { data: {}, status: 204, message: "please provide one of the local or public fields which includes a username and password" }
+
+        const mkUtilService = new MikrotikUtilService(host, port, username, password)
+        const mkVpnService = new MikrotikVpnService(host, port, username, password)
+
+        const identification = await mkUtilService.getIdentity()
+        if (identification.status !== 200)
+            return { data: {}, status: identification.status, message: identification.message }
+
+        const ipPoolList = await mkUtilService.getIpPoolList()
+        if (ipPoolList.status !== 200)
+            return { data: {}, status: ipPoolList.status, message: ipPoolList.message }
+
+        const profiles = await mkVpnService.listOfProfiles()
+        if (profiles.status != 200)
+            return { data: {}, status: profiles.status, message: profiles.message }
+
+        const validIp = await mkUtilService.getValidIp()
+        if (validIp.status != 200)
+            return { data: {}, status: validIp.status, message: validIp.message }
+
+        const certificates = await mkUtilService.getCertificates()
+        if (certificates.status != 200)
+            return { data: {}, status: certificates.status, message: certificates.message }
+
+        switch (vpnType) {
             case 'openVpn':
-                return { data:{} , status: 200, message:'we are working on new feature to create openVpn' }
+                const poolName = `${toCamelCase(identification.data)}_openVpn_pool_api`
+
+                const poolFound = ipPoolList.data.find((pool) => pool.name === poolName);
+                let poolData: any;
+
+                if (!poolFound) {
+                    const newPool = await mkUtilService.createIpPool(poolName);
+                    if (newPool.status !== 200) {
+                        return { data: {}, status: newPool.status, message: newPool.message };
+                    }
+                    poolData = newPool.data;
+                } else {
+                    poolData = poolFound;
+                }
+
+                const openVpnProfile = `${toCamelCase(identification.data)}_openVpn_profile_api`
+
+                const profileFound = profiles.data.some((profile) => profile.name == openVpnProfile)
+                if (!profileFound) {
+                    let createProfResult = await mkVpnService.createNewProfile({
+                        name: openVpnProfile,
+                        localAddress: poolData.startIp || poolData.poolStart,
+                        poolName: poolName,
+                        dnsServer: '8.8.8.8,1.1.1.1'
+                    })
+                    if (createProfResult.status != 200)
+                        return { data: {}, status: createProfResult.status, message: createProfResult.message }
+                }
+
+                //ca certificate
+                const caCertificateName = 'CA-Template-OPENVPN-API'
+                const caCertificateCommonName = 'CA-OPENVPN-API'
+
+                const caCertFound = certificates.data.some((certificate) => certificate.name == caCertificateName)
+                if (!caCertFound) {
+                    const createCaResult = await mkUtilService.createCertificate({
+                        name: caCertificateName,
+                        commonName: caCertificateCommonName,
+                        daysValid: 3650,
+                        keySize: 4096,
+                        keyUsage: 'crl-sign,key-cert-sign'
+                    })
+                    if (createCaResult.status != 200)
+                        return { data: {}, status: createCaResult.status, message: createCaResult.message }
+                }
+                const signCaResult = await mkUtilService.signCertificate({
+                    certificateName: caCertificateName
+                })
+                if (signCaResult.status != 200)
+                    return { data: {}, status: signCaResult.status, message: signCaResult.message }
+
+                const trustCaResult = await mkUtilService.trustCertificate(caCertificateName)
+                if (trustCaResult.status != 200)
+                    return { data: {}, status: trustCaResult.status, message: trustCaResult.message }
+
+
+                //server certificate
+                const caServerName = 'CA-SERVER-OPENVPN-API'
+                const caServerCommonName = 'CA-SERVER-OPENVPN'
+                const caServerFound = certificates.data.some((certificate) => certificate.name == caServerName)
+                if (!caServerFound) {
+                    const caServerResult = await mkUtilService.createCertificate({
+                        name: caServerName,
+                        commonName: caServerCommonName,
+                        daysValid: 3650,
+                        keySize: 4096,
+                        keyUsage: 'digital-signature,key-encipherment'
+                    })
+                    if (caServerResult.status != 200)
+                        return { data: {}, status: caServerResult.status, message: caServerResult.message }
+
+                }
+                const signServerResult = await mkUtilService.signCertificate({
+                    certificateName: caServerName,
+                    caName: caCertificateName
+                })
+
+                if (signServerResult.status != 200)
+                    return { data: {}, status: signServerResult.status, message: signServerResult.message }
+
+                const trustCaServerResult = await mkUtilService.trustCertificate(caServerName)
+                if (trustCaServerResult.status != 200)
+                    return { data: {}, status: trustCaServerResult.status, message: trustCaServerResult.message }
+
+                //client certificate
+                const caClientName = 'CA-CLIENT-OPENVPN-API'
+                const caClientCommon = 'CA-CLIENT-OPENVPN'
+                const caClientFound = certificates.data.some((certificate) => certificate.name == caClientName)
+
+                if (!caClientFound) {
+                    const caClientResult = await mkUtilService.createCertificate({
+                        name: caClientName,
+                        commonName: caClientCommon,
+                        daysValid: 3650,
+                        keySize: 4096,
+                        keyUsage: 'tls-client'
+                    })
+                    if (caClientResult.status != 200)
+                        return { data: {}, status: caClientResult.status, message: caClientResult.message }
+
+                }
+                const signClientResult = await mkUtilService.signCertificate({
+                    certificateName: caClientName,
+                    caName: caCertificateName
+                })
+                if (signClientResult.status != 200)
+                    return { data: {}, status: signClientResult.status, message: signClientResult.message }
+
+                const openVpnPort = await mkUtilService.findUsablePort()
+                if (openVpnPort.status != 200)
+                    return { data: {}, status: openVpnPort.status, message: openVpnPort.message }
+
+                const openVpnConfig = await mkVpnService.OpenvpnConfig({
+                    certificateName: caServerName,
+                    port: openVpnPort.data.port!,
+                    profileName: openVpnProfile
+                })
+                if (openVpnConfig.status != 200)
+                    return { data: {}, status: openVpnConfig.status, message: openVpnConfig.message }
+
+                const caCert = await mkUtilService.getCaCertificate(caCertificateName)
+                if (caCert.status != 200)
+                    return { data: {}, status: caCert.status, message: caCert.message }
+
+                const caClient = await mkUtilService.getClientCertAndKey(caClientName)
+                if (caClient.status != 200)
+                    return { data: {}, status: caClient.status, message: caClient.message }
+
+                console.log(caCert)
+                console.log(caClient)
+
+
+                return { data: 'done!', status: 200, message: 'we are working on new feature to create pptp' }
+
             case 'l2tp':
-                return { data:{} , status: 200, message:'we are working on new feature to create l2tp' }
+                return { data: {}, status: 200, message: 'we are working on new feature to create l2tp' }
+
             case 'ppp':
-                return { data:{} , status: 200, message:'we are working on new feature to create ppp' }
+                return { data: {}, status: 200, message: 'we are working on new feature to create ppp' }
+
             case 'pptp':
-                return { data:{} , status: 200, message:'we are working on new feature to create pptp' }
+                return { data: {}, status: 200, message: 'we are working on new feature to create pptp' }
+
+            default:
+                return { data: {}, status: 204, message: "selected tunnel was not found!" }
         }
     }
 
-    private async createOpenVpn(input:CreateVpnInterface){}
+    private async createOpenVpn(input: CreateVpnInterface) { }
 
-    private async createL2tp(input:CreateVpnInterface){}
+    private async createL2tp(input: CreateVpnInterface) { }
 
-    private async createPpp(input:CreateVpnInterface){}
+    private async createPpp(input: CreateVpnInterface) { }
 
-    private async createPptp(input:CreateVpnInterface){}
-    
+    private async createPptp(input: CreateVpnInterface) { }
+
 }
