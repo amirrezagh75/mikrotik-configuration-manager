@@ -24,8 +24,8 @@ export class MikrotikService {
         }
     }
 
-    protected disconnect(): void {
-        this.client.close();
+    protected async disconnect():Promise<void>  {
+        await this.client.close();
     }
 
     public async validateConnection(): Promise<ResponseDto> {
@@ -40,7 +40,7 @@ export class MikrotikService {
             console.error('Failed to validate connection:', error);
             return { data: [], status: 500, message: 'Unable to validate connection' };
         } finally {
-            this.disconnect(); // Ensure to close the connection
+            await this.disconnect(); // Ensure to close the connection
         }
     }
 }
