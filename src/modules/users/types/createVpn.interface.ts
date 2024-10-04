@@ -19,8 +19,6 @@ const IpSchema = z.object({
 const RouterSchema = z.object({
     local: IpSchema.optional(),
     public: IpSchema.optional(),
-    username: z.string(),
-    password: z.string(),
 });
 
 const CredentialSchema = z.object({
