@@ -3,6 +3,7 @@ import { Request, Response } from 'express'
 import { UserServices } from '../services';
 import { RequestInputSchema, CreateTunnelSchema, CreateTunnelInterface } from '../types'
 import { validateRequest } from '../../../common/middlewares'
+import { CreateVpnInterface, CreateVpnSchema } from '../types/createVpn.interface';
 export const userRouter = express.Router();
 
 
@@ -31,6 +32,15 @@ userRouter.post('/createTunnel', validateRequest(CreateTunnelSchema),async (req:
 
     const userService = new UserServices();
     const tunnelCreationRes = await userService.createTunnel(body);
+
+    res.json(tunnelCreationRes);
+} )
+
+userRouter.post('/createVpn', validateRequest(CreateVpnSchema),async (req: Request, res: Response) => {
+    const body: CreateVpnInterface = req.body;
+
+    const userService = new UserServices();
+    const tunnelCreationRes = await userService.createVpn(body);
 
     res.json(tunnelCreationRes);
 } )
