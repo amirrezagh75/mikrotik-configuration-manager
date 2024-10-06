@@ -6,7 +6,7 @@ export const generateRandomIP= (ipClass: IPClass = 'A'): string => {
     switch (ipClass) {
         case 'A':
             // Class A: 1.0.0.0 to 126.255.255.255
-            firstOctet = Math.floor(Math.random() * 126) + 1;
+            firstOctet = ipClass == 'A' ? 10 : ipClass == 'B' ? 172 : ipClass == 'C' ? 192 : 1;
             break;
         case 'B':
             // Class B: 128.0.0.0 to 191.255.255.255
