@@ -173,7 +173,7 @@ export class UserServices {
                 console.log(`create vtep source status: ${JSON.stringify(createVtepSource)}`)
 
                 const createVtepDestination = await ipSelection.mkTunnelServiceDestination.addVtepToVxlan(
-                    destinationIp,
+                    sourceIp,
                     `vxlan_tunnel_to_${toCamelCase(sourceName.data)}_api`,
                     portNumber
                 );
@@ -186,9 +186,9 @@ export class UserServices {
                         message: `couldn't create GRE tunnel ${createVtepSource.status != 200 ? 'source vtep' : ''} ${createVtepDestination.status != 200 ? "destination vtep" : ""}`
                     };
 
-                const ipAssignVxlanSource = await ipSelection.mkTunnelServiceSource.setIpAddress(`eoip_tunnel_to_${toCamelCase(destinationName.data)}_api`, sourceTunnelIpAddress, "24")
+                const ipAssignVxlanSource = await ipSelection.mkTunnelServiceSource.setIpAddress(`vxlan_tunnel_to_${toCamelCase(destinationName.data)}_api`, sourceTunnelIpAddress, "24")
 
-                const ipAssignVxlanDestination = await ipSelection.mkTunnelServiceDestination.setIpAddress(`eoip_tunnel_to_${toCamelCase(sourceName.data)}_api`, destinationTunnelIpAddress, "24")
+                const ipAssignVxlanDestination = await ipSelection.mkTunnelServiceDestination.setIpAddress(`vxlan_tunnel_to_${toCamelCase(sourceName.data)}_api`, destinationTunnelIpAddress, "24")
 
 
                 if (ipAssignVxlanSource.status != 200 || ipAssignVxlanDestination.status != 200)
