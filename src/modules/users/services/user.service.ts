@@ -1,7 +1,8 @@
+import path from 'path'
 import { ResponseDto } from '../../../common/DTO'
 import { CreateTunnelInterface, PublicOrLocalIp, RequestInterface } from '../types'
 import { MikrotikService, MikrotikTunnelService, MikrotikUtilService, MikrotikVpnService } from '../../mikrotik/services'
-import { generateRandomIP, openVpnTemplate, replaceLastSectionOfIp, toCamelCase } from '../../../utils'
+import { generateRandomIP, generateOpenVPNConfig, replaceLastSectionOfIp, toCamelCase, generateCertificates } from '../../../utils'
 import { CreateVpnInterface } from '../types/createVpn.interface'
 
 export class UserServices {
@@ -372,111 +373,94 @@ export class UserServices {
                     if (createProfResult.status != 200)
                         return { data: {}, status: createProfResult.status, message: createProfResult.message }
                 }
+                //generate certificate
+                const caCertificateName = 'CA-Template-OPENVPN-API'
+                const caServerName = 'CA-SERVER-OPENVPN-API'
+                const caClientName = 'CA-CLIENT-OPENVPN-API'
+
+                const generatedCerts = await generateCertificates({
+                    caName: caCertificateName,
+                    serverName: caServerName,
+                    clientName: caClientName
+                })
+                if(generatedCerts.status != 200)
+                    return { data:{}, status:generatedCerts.status , message: generatedCerts.message  }
+
+                //upload on router
+                const caCertUpload = await mkUtilService.uploadFile({
+                    localFilePath: path.join(process.cwd(),'certs', generatedCerts.data.caCert!),
+                    remoteFileName: generatedCerts.data.caCert!
+                })
+                if(caCertUpload.status != 200)
+                    return { data:{}, status: caCertUpload.status , message: caCertUpload.message  }
+
+                const serverCaUpload = await mkUtilService.uploadFile({
+                    localFilePath: path.join(process.cwd(),'certs', generatedCerts.data.serverCert!),
+                    remoteFileName: generatedCerts.data.serverCert!
+                })
+                if(serverCaUpload.status != 200)
+                    return { data:{}, status: serverCaUpload.status , message: serverCaUpload.message  }
+                
+                const serverKeyUpload = await mkUtilService.uploadFile({
+                    localFilePath:  path.join(process.cwd(),'certs', generatedCerts.data.serverKey!),
+                    remoteFileName: generatedCerts.data.serverKey!
+                })
+                if(serverKeyUpload.status != 200)
+                    return { data:{}, status: serverKeyUpload.status , message: serverKeyUpload.message  }
+
 
                 //ca certificate
-                const caCertificateName = 'CA-Template-OPENVPN-API'
-                const caCertificateCommonName = 'CA-OPENVPN-API'
-
                 const caCertFound = certificates.data.some((certificate) => certificate.name == caCertificateName)
                 if (!caCertFound) {
-                    const createCaResult = await mkUtilService.createCertificate({
-                        name: caCertificateName,
-                        commonName: caCertificateCommonName,
-                        daysValid: 3650,
-                        keySize: 4096,
-                        keyUsage: 'crl-sign,key-cert-sign'
-                    })
-                    if (createCaResult.status != 200)
-                        return { data: {}, status: createCaResult.status, message: createCaResult.message }
+                    const importCaCert = await mkUtilService.importCertificate(generatedCerts.data.caCert!)
+                    
+                    if (importCaCert.status != 200)
+                        return { data: {}, status: importCaCert.status, message: importCaCert.message }
                 }
-                const signCaResult = await mkUtilService.signCertificate({
-                    certificateName: caCertificateName
-                })
-                if (signCaResult.status != 200)
-                    return { data: {}, status: signCaResult.status, message: signCaResult.message }
-
-                const trustCaResult = await mkUtilService.trustCertificate(caCertificateName)
-                if (trustCaResult.status != 200)
-                    return { data: {}, status: trustCaResult.status, message: trustCaResult.message }
 
 
                 //server certificate
-                const caServerName = 'CA-SERVER-OPENVPN-API'
-                const caServerCommonName = 'CA-SERVER-OPENVPN'
                 const caServerFound = certificates.data.some((certificate) => certificate.name == caServerName)
                 if (!caServerFound) {
-                    const caServerResult = await mkUtilService.createCertificate({
-                        name: caServerName,
-                        commonName: caServerCommonName,
-                        daysValid: 3650,
-                        keySize: 4096,
-                        keyUsage: 'digital-signature,key-encipherment'
-                    })
-                    if (caServerResult.status != 200)
-                        return { data: {}, status: caServerResult.status, message: caServerResult.message }
-
+                    const importServerCa = await mkUtilService.importCertificate(generatedCerts.data.serverCert!)
+                    if (importServerCa.status != 200)
+                        return { data: {}, status: importServerCa.status, message: importServerCa.message }
+                    
+                    const importServerKey = await mkUtilService.importCertificate(generatedCerts.data.serverKey!)
+                    if (importServerKey.status != 200)
+                        return { data: {}, status: importServerKey.status, message: importServerKey.message }          
                 }
-                const signServerResult = await mkUtilService.signCertificate({
-                    certificateName: caServerName,
-                    caName: caCertificateName
-                })
 
-                if (signServerResult.status != 200)
-                    return { data: {}, status: signServerResult.status, message: signServerResult.message }
 
-                const trustCaServerResult = await mkUtilService.trustCertificate(caServerName)
-                if (trustCaServerResult.status != 200)
-                    return { data: {}, status: trustCaServerResult.status, message: trustCaServerResult.message }
-
-                //client certificate
-                const caClientName = 'CA-CLIENT-OPENVPN-API'
-                const caClientCommon = 'CA-CLIENT-OPENVPN'
-                const caClientFound = certificates.data.some((certificate) => certificate.name == caClientName)
-
-                if (!caClientFound) {
-                    const caClientResult = await mkUtilService.createCertificate({
-                        name: caClientName,
-                        commonName: caClientCommon,
-                        daysValid: 3650,
-                        keySize: 4096,
-                        keyUsage: 'tls-client'
-                    })
-                    if (caClientResult.status != 200)
-                        return { data: {}, status: caClientResult.status, message: caClientResult.message }
-
-                }
-                const signClientResult = await mkUtilService.signCertificate({
-                    certificateName: caClientName,
-                    caName: caCertificateName
-                })
-                if (signClientResult.status != 200)
-                    return { data: {}, status: signClientResult.status, message: signClientResult.message }
-
+                //openvpn ppp config
                 const openVpnPort = await mkUtilService.findUsablePort()
                 if (openVpnPort.status != 200)
                     return { data: {}, status: openVpnPort.status, message: openVpnPort.message }
 
+                const serverCertName = generatedCerts.data.serverCert!
+                const finalServerCertName = serverCertName.substring(0, serverCertName.lastIndexOf('.'))
+                
+                console.log({finalServerCertName})
+
                 const openVpnConfig = await mkVpnService.OpenvpnConfig({
-                    certificateName: caServerName,
+                    certificateName: finalServerCertName,
                     port: openVpnPort.data.port!,
                     profileName: openVpnProfile
                 })
                 if (openVpnConfig.status != 200)
                     return { data: {}, status: openVpnConfig.status, message: openVpnConfig.message }
+                
+                const openVpnConfigFile = generateOpenVPNConfig({
+                    caCertPath:path.join(process.cwd(),'certs/', generatedCerts.data.caCert!),
+                    clientCertPath:path.join(process.cwd(),'certs/', generatedCerts.data.clientCert!),
+                    clientKeyPath:path.join(process.cwd(),'certs/', generatedCerts.data.clientKey!),
+                    remoteIp: host,
+                    remotePort:openVpnPort.data.port!
+                })
+                if(openVpnConfigFile.status != 200)
+                    return { data: {} , status: openVpnConfigFile.status, message: openVpnConfigFile.message }
 
-                const caCert = await mkUtilService.getCaCertificate(caCertificateName)
-                if (caCert.status != 200)
-                    return { data: {}, status: caCert.status, message: caCert.message }
-
-                const caClient = await mkUtilService.getClientCertAndKey(caClientName)
-                if (caClient.status != 200)
-                    return { data: {}, status: caClient.status, message: caClient.message }
-
-                console.log(caCert)
-                console.log(caClient)
-
-
-                return { data: 'done!', status: 200, message: 'we are working on new feature to create pptp' }
+                return { data: {config: openVpnConfigFile.data}, status: 200, message: 'we have successfully setup openVpn on your router' }
 
             case 'l2tp':
                 return { data: {}, status: 200, message: 'we are working on new feature to create l2tp' }
