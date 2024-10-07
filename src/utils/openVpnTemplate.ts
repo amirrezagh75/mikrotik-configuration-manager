@@ -1,33 +1,67 @@
-export const openVpnTemplate = (input: {serverAddress: string, caCert: string, clientCert: string, clientKey: string}) => {
-    return `
-client
+import fs from 'fs';
+import path from 'path';
+
+export const generateOpenVPNConfig = (input: { 
+    caCertPath: string, 
+    clientCertPath: string, 
+    clientKeyPath: string, 
+    remoteIp: string,
+    remotePort: number 
+}) => {
+    try {
+        // Read file contents
+        const caCert = fs.readFileSync(path.resolve(input.caCertPath), 'utf8').trim();
+        const clientCert = fs.readFileSync(path.resolve(input.clientCertPath), 'utf8').trim();
+        const clientKey = fs.readFileSync(path.resolve(input.clientKeyPath), 'utf8').trim();
+
+        // OpenVPN configuration template
+        let config = `
+        client
 dev tun
-proto tcp
-remote ${input.serverAddress}
-redirect-gateway def1
-resolv-retry infinite
-nobind
-persist-key
-persist-tun
-cipher AES-128-CBC
-verb 3
-mute 20
-auth SHA1
+remote ${input.remoteIp} ${input.remotePort} tcp
+route serverIp 255.255.255.255 net_gateway
+tun-mtu 1500
 tls-client
-
-<ca>
-${input.caCert}
-</ca>
-
-<cert>
-${input.clientCert}
-</cert>
-
-<key>
-${input.clientKey}
-</key>
-
-key-direction 1
+nobind
+user nobody
+group nogroup
+ping 15
+ping-restart 45
+persist-tun
+persist-key
+mute-replay-warnings
+verb 3
+cipher AES-256-CBC
+auth SHA1
+pull
+auth-user-pass
+connect-retry 1
+reneg-sec 3600
 remote-cert-tls server
-auth-user-pass`;
+<ca>
+${caCert}
+</ca>
+<cert>
+${clientCert}
+</cert>
+<key>
+${clientKey}
+</key>
+        `;
+
+        // Clean up any extra spaces or newlines for a clean output
+        config = config.replace(/\n{2,}/g, '\n').trim();
+
+        return { 
+            data: config, 
+            status: 200, 
+            message: 'OpenVPN configuration generated successfully!' 
+        };
+    } catch (error) {
+        return { 
+            data: '', 
+            status: 500, 
+            message: `Failed to generate OpenVPN config: ${error}` 
+        };
+    }
 };
