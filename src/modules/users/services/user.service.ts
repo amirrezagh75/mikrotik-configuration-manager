@@ -199,6 +199,40 @@ export class UserServices {
 
                 return { data: { createVxlanSource, createVxlanDestination, ipAssignVxlanSource, ipAssignVxlanDestination }, status: 200, message: `GRE tunnel created successfully with this ip:\nsource:${sourceTunnelIpAddress}\ndestionation:${destinationTunnelIpAddress}` };
 
+            case 'ipip':
+                const createIpipSource = await ipSelection.mkTunnelServiceSource.createIpipTunnel(
+                    destinationIp,
+                    toCamelCase(destinationName.data)
+                );
+                console.log(`create source tunnel status: ${JSON.stringify(createIpipSource)}`)
+
+                const createIpipDestination = await ipSelection.mkTunnelServiceDestination.createIpipTunnel(
+                    sourceIp,
+                    toCamelCase(sourceName.data)
+                );
+                console.log(`create destination tunnel status: ${JSON.stringify(createIpipDestination)}`)
+
+                if (createIpipSource.status != 200 || createIpipDestination.status != 200)
+                    return {
+                        data: {}, status: 508,
+                        message: `couldn't create GRE tunnel ${createIpipSource.status != 200 ? 'source router' : ''} ${createIpipDestination.status != 200 ? "destination router" : ""}`
+                    };
+
+
+                const ipAssignIpipSource = await ipSelection.mkTunnelServiceSource.setIpAddress(`gre_tunnel_to_${toCamelCase(destinationName.data)}_api`, sourceTunnelIpAddress, "24")
+
+                const ipAssignIpipDestination = await ipSelection.mkTunnelServiceDestination.setIpAddress(`gre_tunnel_to_${toCamelCase(sourceName.data)}_api`, destinationTunnelIpAddress, "24")
+
+
+                if (ipAssignIpipSource.status != 200 || ipAssignIpipDestination.status != 200)
+                    return {
+                        data: {}, status: 508,
+                        message: `couldn't assign Ip address to ${ipAssignIpipSource.status != 200 ? "source" : ""} ${ipAssignIpipDestination.status != 200 ? "destination" : ""}`
+                    }
+
+                return { data: { createIpipSource, createIpipDestination, ipAssignSource: ipAssignIpipSource, ipAssignIpipDestination }, status: 200, message: `GRE tunnel created successfully with this ip:\nsource:${sourceTunnelIpAddress}\ndestionation:${destinationTunnelIpAddress}` };
+
+
             default:
                 return { data: '', status: 204, message: 'Selected tunnel type is not valid' };
         }
