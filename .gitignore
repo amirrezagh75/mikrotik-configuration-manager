@@ -96,3 +96,6 @@ dist/
 
 #igonore local http requests
 *.http
+
+# ignore temporary certs
+certs/
