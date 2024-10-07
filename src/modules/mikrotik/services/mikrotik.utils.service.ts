@@ -1,6 +1,7 @@
+import ip from 'ip'
+import { promises as fs } from 'fs';
 import { generateRandomIP, getRandomPort } from '../../../utils';
 import { MikrotikService } from './mikrotik.service'
-import ip from 'ip'
 import { ResponseDto } from '../../../common/DTO';
 
 export class MikrotikUtilService extends MikrotikService {
@@ -192,12 +193,12 @@ export class MikrotikUtilService extends MikrotikService {
         }
     }
 
-    public async signCertificate(input: { certificateName: string, caName?: string }) {
+    public async signCertificate(input: { certificateName: string, caName?: string, caHost?: string }) {
         try {
             const connection = await this.connect();
-            if (connection.status !== 200) {
+            if (connection.status !== 200)
                 return { data: '', status: connection.status, message: connection.message };
-            }
+
             const certResponse = await this.client.write('/certificate/print', [
                 `?name=${input.certificateName}`
             ]);
@@ -208,16 +209,29 @@ export class MikrotikUtilService extends MikrotikService {
 
             const certificateId = certResponse[0]['.id'];
 
-            const signCommand = input.caName ? [
-                `=.id=${certificateId}`,
-                `=ca=${input.caName}`
-            ] : [
-                `=.id=${certificateId}`
-            ];
+            let signCommand;
+            if (input.caName && input.caHost)
+                signCommand = [
+                    `=.id=${certificateId}`,
+                    `=ca=${input.caName}`,
+                    `=ca-crl-host= ${input.caHost}`
+                ]
+            else if (input.caName && !input.caHost)
+                signCommand = [
+                    `=.id=${certificateId}`,
+                    `=ca=${input.caName}`
+                ]
+            else if (input.caHost && input.certificateName)
+                signCommand = [
+                    `=.id=${certificateId}`,
+                    `=ca-crl-host= ${input.caHost}`
+                ]
+            else
+                signCommand = [
+                    `=.id=${certificateId}`,
+                ]
 
             const response = await this.client.write('/certificate/sign', signCommand);
-
-            console.log(`Certificate signing in progress...`);
 
             return { data: response, status: 200, message: 'Certificate sign command issued successfully' };
 
@@ -269,6 +283,10 @@ export class MikrotikUtilService extends MikrotikService {
         let randomIp = '';
         let ipListIsValid, ipPoolIsValid
         try {
+            const connection = await this.connect();
+            if (connection.status !== 200)
+                return { data: null, status: connection.status, message: connection.message };
+
             const ipAddressList = await this.getRouterIpAddresses()
             const poolIpList = await this.getIpPoolList()
 
@@ -291,13 +309,14 @@ export class MikrotikUtilService extends MikrotikService {
         }
     }
 
-
     public async findUsablePort(): Promise<ResponseDto> {
         let port: number;
         let isUsable: boolean = false;
 
         try {
-            await this.connect();
+            const connection = await this.connect();
+            if (connection.status !== 200)
+                return { data: '', status: connection.status, message: connection.message };
 
             const serviceResponse = await this.client.write('/ip/service/print');
             const servicePorts = serviceResponse.map((service: any) => service['port']);
@@ -324,79 +343,87 @@ export class MikrotikUtilService extends MikrotikService {
             console.error(`mikrotik > services > mikrotikUtilsService > findUsablePort > error: \n${error}`);
             return { data: [], status: 500, message: 'Failed to find usable port' };
         } finally {
-            // Disconnect from the MikroTik router
             await this.disconnect();
         }
     }
 
-    public async getCaCertificate(caCertName: string) {
+    async uploadFile(input: { localFilePath: string, remoteFileName: string }) {
         try {
-            await this.connect();
+            if (!fs || typeof fs.readFile !== 'function') {
+                console.error(`mikrotik > services > mikrotikUtilsService > uploadFile > fs module is not properly imported or initialized`);
+                return { data: null, status: 500, message: 'fs module is not properly imported or initialized' };
+            }
+    
+            if (!input.localFilePath) {
+                console.error(`mikrotik > services > mikrotikUtilsService > uploadFile > localFilePath is undefined or empty`);
+                return { data: null, status: 500, message: 'localFilePath is undefined or empty' };
+            }
+    
+            const fileContent = await fs.readFile(input.localFilePath, { encoding: 'utf8' });
+            
+            if (!this.client || typeof this.client.write !== 'function') {
+                console.error(`mikrotik > services > mikrotikUtilsService > uploadFile > client is not properly initialized`);
+                return { data: null, status: 500, message: 'client is not properly initialized' };
+            }
 
-            // Export the CA certificate
-            const response = await this.client.write('/certificate/export-certificate', [
-                `${caCertName}`,
-                '=export-passphrase=""'
-            ]);
-
-            // Get the exported file name from the response
-            console.log('Exported CA certificate response:', response);
-
-            // Assuming the response contains the exported file name, you'll need to read that file to get its content
-            // const exportedCaCert = await this.client.write('/file/print', [
-            //     '?name=' + response.fileName // Adjust if necessary to retrieve the exported cert
-            // ]);
-
-            // const caCert = exportedCaCert[0].contents; // Extract certificate content
-
-            return {
-                data: {
-                    certificate: '',
-                },
-                status: 200,
-                message: 'CA Certificate retrieved successfully'
-            };
+            const connection = await this.connect();
+            if (connection.status !== 200)
+                return { data: null, status: connection.status, message: connection.message };
+    
+            const response = await this.client.write('/file/add', [`=contents=${fileContent}`, `=name=${input.remoteFileName}`]);
+            
+            return { data: response, status: 200, message: 'file uploaded successfully' };
         } catch (error) {
-            console.error(`mikrotik > services > mikrotikUtilsService > getCaCertificate > error: \n${error}`);
-            return { data: {}, status: 500, message: 'Failed to retrieve CA certificate' };
-        } finally {
-            await this.disconnect();
+            console.error(`mikrotik > services > mikrotikUtilsService > uploadFile > error: \n${error}`);
+            return { data: null, status: 500, message: `failed to upload file: ${error}` };
+        } finally{
+            await this.disconnect()
         }
     }
-
-    public async getClientCertAndKey(clientCertName: string) {
+    
+    async importCertificate(remoteFileName: string, passphrase?: string) {
         try {
-            await this.connect();
+            const connection = await this.connect();
+            if (connection.status !== 200)
+                return { data: '', status: connection.status, message: connection.message };
 
-            // Export the client certificate and private key
-            const response = await this.client.write('/certificate/export', [
-                `${clientCertName}`,
-                '=export-passphrase="123456789"' // Optional: Passphrase can be used to secure the key
-            ]);
+            const importCommand = passphrase ? [
+                `=file-name=${remoteFileName}`,
+                `=trusted=yes`,
+                `=passphrase=${passphrase}`
+            ] : [
+                `=file-name=${remoteFileName}`,
+                `=trusted=yes`
+            ];
+            const response = await this.client.write('/certificate/import', importCommand);
 
-            console.log('Exported client certificate response:', response);
+            console.log(`Certificate imported: ${remoteFileName}`);
+            return { data: response, status: 200, message: 'certificate imported' };
 
-            // Retrieve the exported certificate and key content from the file
-            // const exportedClientCert = await this.client.write('/file/print', [
-            //     '?name=' + response.fileName // Adjust if necessary to get file content
-            // ]);
-
-            // const clientCert = exportedClientCert[0].contents; // Get certificate content
-
-            return {
-                data: {
-                    certificate: '', // Full PEM certificate
-                    privateKey: '', // Ensure you export this key, too
-                },
-                status: 200,
-                message: 'Client Certificate and Key retrieved successfully'
-            };
         } catch (error) {
-            console.error(`mikrotik > services > mikrotikUtilsService > getClientCertAndKey > error: \n${error}`);
-            return { data: {}, status: 500, message: 'Failed to retrieve Client certificate and key' };
+            console.error(`mikrotik > services > mikrotikUtilsService > importCertificate > error: \n${error}`)
+            return { data: null, status: 500, message: 'failed to delete file' }
+
         } finally {
-            await this.disconnect();
+            await this.disconnect()
         }
     }
 
+    async removeFile(remoteFileName: string) {
+        try {
+            const connection = await this.connect();
+            if (connection.status !== 200)
+                return { data: '', status: connection.status, message: connection.message };
+
+            const response = await this.client.write('/file/remove', [`${remoteFileName}`]);
+            console.log(`File removed: ${remoteFileName}`);
+            return { data: response, status: 200, message: 'file was removed successfully' };
+
+        } catch (error) {
+            console.error(`mikrotik > services > mikrotikUtilsService > removeFile > error: \n${error}`)
+            return { data: null, status: 500, message: 'failed to delete file' }
+        } finally {
+            await this.disconnect()
+        }
+    }
 }
