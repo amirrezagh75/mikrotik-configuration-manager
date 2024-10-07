@@ -52,6 +52,32 @@ export class MikrotikTunnelService extends MikrotikService {
         }
     }
 
+    public async createIpipTunnel(remoteAddress: string, name: string): Promise<ResponseDto> {
+        try {
+            const connection = await this.connect()
+            if (connection.status != 200)
+                return { data: '', status: connection.status, message: connection.message }
+
+            const response = await this.client.write('/interface/ipip/add', [
+                `=name=ipip_tunnel_to_${name}_api`,
+                `=remote-address=${remoteAddress}`
+            ]);
+
+            console.log(`IPIP Tunnel ipip_tunnel_to_${name}_api created successfully`, response);
+
+            await this.disconnect()
+
+            return { data: response, status: 200, message: 'ran successfully' }
+
+        } catch (error) {
+            console.error(`mikrotik > services > mikrotikTunnelService > createIpipTunnel > error: \n${error}`)
+
+            await this.disconnect()
+
+            return { data: [], status: 500, message: 'failed to run command' }
+        }
+    }
+
     public async setIpAddress(interfaceName: string, ipAddress: string, netmask: string) {
         try {
             const connection = await this.connect()
