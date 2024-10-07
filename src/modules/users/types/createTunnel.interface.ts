@@ -1,7 +1,7 @@
 import z from 'zod'
 import { domainRegex, ipv4Regex } from '../../../utils';
 
-const tunnelTypes = ["vxlan", "gre", "eoip"] as const;
+const tunnelTypes = ["vxlan", "gre", "eoip", "ipip"] as const;
 
 const portRange = { min: 1, max: 65535 };
 
