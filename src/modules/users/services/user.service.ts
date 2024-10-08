@@ -392,15 +392,27 @@ export class UserServices {
 
                 // new certificate names
                 const caCertificateKeyName = generatedCerts.data.caCert!
+                const caCertPrivateKey = generatedCerts.data.caKey!
                 const serverCertNewName = generatedCerts.data.serverCert!
 
                 //upload on router
+
+                // ca cert
                 const caCertUpload = await mkUtilService.uploadFile({
                     localFilePath: path.join(process.cwd(),'certs', caCertificateKeyName),
                     remoteFileName: caCertificateKeyName
                 })
                 if(caCertUpload.status != 200)
                     return { data:{}, status: caCertUpload.status , message: caCertUpload.message  }
+                //ca private key
+                const caKeyUpload = await mkUtilService.uploadFile({
+                    localFilePath: path.join(process.cwd(),'certs', caCertPrivateKey),
+                    remoteFileName: caCertPrivateKey
+                })
+                if(caKeyUpload.status != 200)
+                    return { data:{}, status: caKeyUpload.status , message: caKeyUpload.message  }
+
+                // server cert
 
                 const serverCaUpload = await mkUtilService.uploadFile({
                     localFilePath: path.join(process.cwd(),'certs', serverCertNewName),
@@ -409,6 +421,7 @@ export class UserServices {
                 if(serverCaUpload.status != 200)
                     return { data:{}, status: serverCaUpload.status , message: serverCaUpload.message  }
                 
+                //server private key
                 const serverKeyUpload = await mkUtilService.uploadFile({
                     localFilePath:  path.join(process.cwd(),'certs', generatedCerts.data.serverKey!),
                     remoteFileName: generatedCerts.data.serverKey!
@@ -420,9 +433,12 @@ export class UserServices {
                 //ca certificate
                 if (!caCertFound) {
                     const importCaCert = await mkUtilService.importCertificate(caCertificateKeyName)
-                    
                     if (importCaCert.status != 200)
                         return { data: {}, status: importCaCert.status, message: importCaCert.message }
+
+                    const importCaKey = await mkUtilService.importCertificate(caCertPrivateKey)
+                    if (importCaKey.status != 200)
+                        return { data: {}, status: importCaKey.status, message: importCaKey.message }
                 }
 
 
