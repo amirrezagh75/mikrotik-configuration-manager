@@ -1,12 +1,14 @@
 import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
+import cors from 'cors'
 
 import { mikrotik, users } from './modules'
 
 const app = express();
 
 app.use(express.json())
+app.use(cors())
 
 app.use('/user', users.routes.userRouter);
 app.use('/mikrotik', mikrotik.routes.mikrotikRouter);
