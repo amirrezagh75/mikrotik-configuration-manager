@@ -56,7 +56,8 @@ export class MikrotikVpnService extends MikrotikService {
                 `=name=${input.name}`,
                 `=local-address=${input.localAddress}`,
                 `=remote-address=${input.poolName}`,
-                `=change-tcp-mss=yes`
+                `=change-tcp-mss=yes`,
+                `=dns-server=8.8.8.8,1.1.1.1`
             ]);
             console.log(`new profile created successfully`);
 
