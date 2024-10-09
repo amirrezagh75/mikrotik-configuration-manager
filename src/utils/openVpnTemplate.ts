@@ -20,6 +20,7 @@ export const generateOpenVPNConfig = (input: {
 dev tun
 remote ${input.remoteIp} ${input.remotePort} tcp
 route ${input.remoteIp} 255.255.255.255 net_gateway
+redirect-gateway def1
 tun-mtu 1500
 tls-client
 nobind

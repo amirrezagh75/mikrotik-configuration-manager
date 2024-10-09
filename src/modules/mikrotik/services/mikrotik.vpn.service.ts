@@ -14,7 +14,8 @@ export class MikrotikVpnService extends MikrotikService {
                 `=default-profile=${input.profileName}`,
                 `=certificate=${input.certificateName}`,
                 `=cipher=blowfish128,aes128-cbc,aes192-cbc,aes256-cbc`,
-                `=auth=sha1,md5`
+                `=auth=sha1,md5`,
+                `=redirect-gateway=def1`
             ]);
             console.log(`open vpn configured successfully`)      
              return { data: response, status: 200, message: 'ran successfully' }
