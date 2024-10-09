@@ -291,7 +291,7 @@ export class MikrotikUtilService extends MikrotikService {
             const poolIpList = await this.getIpPoolList()
 
             while (!isValid) {
-                randomIp = generateRandomIP()
+                randomIp = generateRandomIP('A')
                 ipListIsValid = ipAddressList.data.every((net: any) => net.network !== randomIp);
                 ipPoolIsValid = poolIpList.data.every((net: any) => net.network !== randomIp)
 
