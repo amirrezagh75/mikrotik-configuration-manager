@@ -349,6 +349,7 @@ export class MikrotikUtilService extends MikrotikService {
 
     async uploadFile(input: { localFilePath: string, remoteFileName: string }) {
         try {
+            
             if (!fs || typeof fs.readFile !== 'function') {
                 console.error(`mikrotik > services > mikrotikUtilsService > uploadFile > fs module is not properly imported or initialized`);
                 return { data: null, status: 500, message: 'fs module is not properly imported or initialized' };
@@ -402,6 +403,13 @@ export class MikrotikUtilService extends MikrotikService {
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikUtilsService > importCertificate > error: \n${error}`)
+            return { data: null, status: 500, message: 'failed to import certificate' }
+
+        } finally {
+            await this.disconnect()
+        }
+    }
+
     async removeCertificate(remoteFileName: string) {
         try {
             const connection = await this.connect();
