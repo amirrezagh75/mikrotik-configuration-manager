@@ -49,13 +49,19 @@ authorityKeyIdentifier = keyid,issuer
 export const generateCertificates = async (input: {
     caName: string,
     serverName: string,
-    clientName: string
+    clientName: string,
+    routerName: string,
 }) => {
     try {
         const certsDir = 'certs';
+        const routerDir = `${certsDir}/${input.routerName}`
         if (!existsSync(certsDir)) {
             mkdirSync(certsDir);
             console.log(`'${certsDir}' directory created.`);
+        }
+        if (!existsSync(routerDir)) {
+            mkdirSync(routerDir);
+            console.log(`'${routerDir}' directory created.`);
         }
 
         // Create OpenSSL config files
@@ -64,18 +70,18 @@ export const generateCertificates = async (input: {
         writeFileSync(`${certsDir}/client_config.cnf`, createOpenSslConfig('client'));
 
         // 1. Generate CA Key and Certificate
-        await execAsync(`openssl genrsa -out ${certsDir}/${input.caName}-key.pem 4096`);
-        await execAsync(`openssl req -x509 -new -nodes -key ${certsDir}/${input.caName}-key.pem -sha256 -days 3650 -out ${certsDir}/${input.caName}-cert.pem -config ${certsDir}/ca_config.cnf`);
+        await execAsync(`openssl genrsa -out ${routerDir}/${input.caName}-key.pem 4096`);
+        await execAsync(`openssl req -x509 -new -nodes -key ${routerDir}/${input.caName}-key.pem -sha256 -days 3650 -out ${routerDir}/${input.caName}-cert.pem -config ${certsDir}/ca_config.cnf`);
 
         // 2. Generate Server Key and CSR, then sign with CA
         await execAsync(`openssl genrsa -out ${certsDir}/${input.serverName}-key.pem 4096`);
         await execAsync(`openssl req -new -key ${certsDir}/${input.serverName}-key.pem -out ${certsDir}/server.csr -config ${certsDir}/server_config.cnf`);
-        await execAsync(`openssl x509 -req -in ${certsDir}/server.csr -CA ${certsDir}/${input.caName}-cert.pem -CAkey ${certsDir}/${input.caName}-key.pem -CAcreateserial -out ${certsDir}/${input.serverName}-cert.pem -days 3650 -sha256 -extfile ${certsDir}/server_config.cnf -extensions v3_server`);
+        await execAsync(`openssl x509 -req -in ${certsDir}/server.csr -CA ${routerDir}/${input.caName}-cert.pem -CAkey ${routerDir}/${input.caName}-key.pem -CAcreateserial -out ${certsDir}/${input.serverName}-cert.pem -days 3650 -sha256 -extfile ${certsDir}/server_config.cnf -extensions v3_server`);
 
         // 3. Generate Client Key and CSR, then sign with CA
         await execAsync(`openssl genrsa -out ${certsDir}/${input.clientName}-key.pem 4096`);
         await execAsync(`openssl req -new -key ${certsDir}/${input.clientName}-key.pem -out ${certsDir}/client.csr -config ${certsDir}/client_config.cnf`);
-        await execAsync(`openssl x509 -req -in ${certsDir}/client.csr -CA ${certsDir}/${input.caName}-cert.pem -CAkey ${certsDir}/${input.caName}-key.pem -CAcreateserial -out ${certsDir}/${input.clientName}-cert.pem -days 3650 -sha256 -extfile ${certsDir}/client_config.cnf -extensions v3_client`);
+        await execAsync(`openssl x509 -req -in ${certsDir}/client.csr -CA ${routerDir}/${input.caName}-cert.pem -CAkey ${routerDir}/${input.caName}-key.pem -CAcreateserial -out ${certsDir}/${input.clientName}-cert.pem -days 3650 -sha256 -extfile ${certsDir}/client_config.cnf -extensions v3_client`);
 
         console.log('Certificates generated successfully');
 
