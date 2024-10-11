@@ -1,4 +1,5 @@
 import path from 'path'
+import fs from 'fs'
 import { ResponseDto } from '../../../common/DTO'
 import { CreateTunnelInterface, PublicOrLocalIp, RequestInterface } from '../types'
 import { MikrotikService, MikrotikTunnelService, MikrotikUtilService, MikrotikVpnService } from '../../mikrotik/services'
@@ -373,28 +374,29 @@ export class UserServices {
                     if (createProfResult.status != 200)
                         return { data: {}, status: createProfResult.status, message: createProfResult.message }
                 }
-                
+
                 //generate certificate
                 const caCertificateName = 'CA-Template-OPENVPN-API'
                 const caServerName = 'CA-SERVER-OPENVPN-API'
                 const caClientName = 'CA-CLIENT-OPENVPN-API'
 
-                const caCertFound = certificates.data.some((certificate) => certificate.name == `${caCertificateName}.pem_0` )
+                const caCertFound = certificates.data.some((certificate) => certificate.name == `${caCertificateName}.pem_0`)
                 const caServerFound = certificates.data.some((certificate) => certificate.name == `${caServerName}.pem_0`)
                 const caClientFound = certificates.data.some((certificate) => certificate.name == `${caClientName}.pem_0`)
 
                 const generatedCerts = await generateCertificates({
                     caName: caCertificateName,
                     serverName: caServerName,
-                    clientName: caClientName
+                    clientName: caClientName,
+                    routerName: identification.data
                 })
-                if(generatedCerts.status != 200)
-                    return { data:{}, status:generatedCerts.status , message: generatedCerts.message  }
+                if (generatedCerts.status != 200)
+                    return { data: {}, status: generatedCerts.status, message: generatedCerts.message }
 
                 // new certificate names
                 const caCertificateKeyName = generatedCerts.data.caCert!
                 const caCertPrivateKey = generatedCerts.data.caKey!
-                
+
                 const serverCertNewName = generatedCerts.data.serverCert!
                 const serverPrivateName = generatedCerts.data.serverKey!
 
@@ -405,53 +407,53 @@ export class UserServices {
 
                 // ca cert
                 const caCertUpload = await mkUtilService.uploadFile({
-                    localFilePath: path.join(process.cwd(),'certs', caCertificateKeyName),
+                    localFilePath: path.join(process.cwd(), 'certs', identification.data, caCertificateKeyName),
                     remoteFileName: caCertificateKeyName.split('.')[0]
                 })
-                if(caCertUpload.status != 200)
-                    return { data:{}, status: caCertUpload.status , message: caCertUpload.message  }
-                
+                if (caCertUpload.status != 200)
+                    return { data: {}, status: caCertUpload.status, message: caCertUpload.message }
+
                 //ca private key
                 const caKeyUpload = await mkUtilService.uploadFile({
-                    localFilePath: path.join(process.cwd(),'certs', caCertPrivateKey),
+                    localFilePath: path.join(process.cwd(), 'certs', identification.data, caCertPrivateKey),
                     remoteFileName: caCertPrivateKey.split('.')[0]
                 })
-                if(caKeyUpload.status != 200)
-                    return { data:{}, status: caKeyUpload.status , message: caKeyUpload.message  }
+                if (caKeyUpload.status != 200)
+                    return { data: {}, status: caKeyUpload.status, message: caKeyUpload.message }
 
 
                 // server cert
                 const serverCaUpload = await mkUtilService.uploadFile({
-                    localFilePath: path.join(process.cwd(),'certs', serverCertNewName),
+                    localFilePath: path.join(process.cwd(), 'certs', identification.data, serverCertNewName),
                     remoteFileName: serverCertNewName.split('.')[0]
                 })
-                if(serverCaUpload.status != 200)
-                    return { data:{}, status: serverCaUpload.status , message: serverCaUpload.message  }
-                
+                if (serverCaUpload.status != 200)
+                    return { data: {}, status: serverCaUpload.status, message: serverCaUpload.message }
+
                 //server private key
                 const serverKeyUpload = await mkUtilService.uploadFile({
-                    localFilePath:  path.join(process.cwd(),'certs', generatedCerts.data.serverKey!),
-                    remoteFileName: generatedCerts.data.serverKey!.split('.')[0]
+                    localFilePath: path.join(process.cwd(), 'certs', identification.data, serverPrivateName),
+                    remoteFileName: serverPrivateName.split('.')[0]
                 })
-                if(serverKeyUpload.status != 200)
-                    return { data:{}, status: serverKeyUpload.status , message: serverKeyUpload.message  }
-                
+                if (serverKeyUpload.status != 200)
+                    return { data: {}, status: serverKeyUpload.status, message: serverKeyUpload.message }
+
 
                 //client cert
                 const clientCertUpload = await mkUtilService.uploadFile({
-                    localFilePath:  path.join(process.cwd(),'certs', clientCertName),
+                    localFilePath: path.join(process.cwd(), 'certs', identification.data, clientCertName),
                     remoteFileName: clientCertName.split('.')[0]
                 })
-                if(clientCertUpload.status != 200)
-                    return { data:{}, status: clientCertUpload.status , message: clientCertUpload.message  }
-                
+                if (clientCertUpload.status != 200)
+                    return { data: {}, status: clientCertUpload.status, message: clientCertUpload.message }
+
                 //client private
                 const clientPrivateUpload = await mkUtilService.uploadFile({
-                    localFilePath:  path.join(process.cwd(),'certs', clientPrivateKeyName),
+                    localFilePath: path.join(process.cwd(), 'certs', identification.data, clientPrivateKeyName),
                     remoteFileName: clientPrivateKeyName.split('.')[0]
                 })
-                if(clientPrivateUpload.status != 200)
-                    return { data:{}, status: clientPrivateUpload.status , message: clientPrivateUpload.message  }
+                if (clientPrivateUpload.status != 200)
+                    return { data: {}, status: clientPrivateUpload.status, message: clientPrivateUpload.message }
 
 
                 //ca certificate
@@ -470,21 +472,21 @@ export class UserServices {
                     const importServerCa = await mkUtilService.importCertificate(serverCertNewName.split('.')[0])
                     if (importServerCa.status != 200)
                         return { data: {}, status: importServerCa.status, message: importServerCa.message }
-                    
-                    const importServerKey = await mkUtilService.importCertificate(generatedCerts.data.serverKey!.split('.')[0])
+
+                    const importServerKey = await mkUtilService.importCertificate(serverPrivateName.split('.')[0])
                     if (importServerKey.status != 200)
-                        return { data: {}, status: importServerKey.status, message: importServerKey.message }          
+                        return { data: {}, status: importServerKey.status, message: importServerKey.message }
                 }
 
                 //client certificate
-                if(!caClientFound){
+                if (!caClientFound) {
                     const importClientCa = await mkUtilService.importCertificate(clientCertName.split('.')[0])
                     if (importClientCa.status != 200)
                         return { data: {}, status: importClientCa.status, message: importClientCa.message }
-                    
-                    const importClientKey = await mkUtilService.importCertificate(generatedCerts.data.clientKey!.split('.')[0])
+
+                    const importClientKey = await mkUtilService.importCertificate(clientPrivateKeyName.split('.')[0])
                     if (importClientKey.status != 200)
-                        return { data: {}, status: importClientKey.status, message: importClientKey.message }  
+                        return { data: {}, status: importClientKey.status, message: importClientKey.message }
                 }
 
 
@@ -493,7 +495,7 @@ export class UserServices {
                 if (openVpnPort.status != 200)
                     return { data: {}, status: openVpnPort.status, message: openVpnPort.message }
 
-                
+
                 const openVpnConfig = await mkVpnService.OpenvpnConfig({
                     certificateName: generatedCerts.data.serverCert!.split('.')[0],
                     port: openVpnPort.data.port!,
@@ -501,18 +503,21 @@ export class UserServices {
                 })
                 if (openVpnConfig.status != 200)
                     return { data: {}, status: openVpnConfig.status, message: openVpnConfig.message }
-                
-                const openVpnConfigFile = generateOpenVPNConfig({
-                    caCertPath:path.join(process.cwd(),'certs/', generatedCerts.data.caCert!),
-                    clientCertPath:path.join(process.cwd(),'certs/', generatedCerts.data.clientCert!),
-                    clientKeyPath:path.join(process.cwd(),'certs/', generatedCerts.data.clientKey!),
-                    remoteIp: host,
-                    remotePort:openVpnPort.data.port!
-                })
-                if(openVpnConfigFile.status != 200)
-                    return { data: {} , status: openVpnConfigFile.status, message: openVpnConfigFile.message }
 
-                return { data: {config: openVpnConfigFile.data}, status: 200, message: 'we have successfully setup openVpn on your router' }
+                const openVpnConfigFile = generateOpenVPNConfig({
+                    caCertPath: path.join(process.cwd(), 'certs', identification.data, caCertificateKeyName),
+                    clientCertPath: path.join(process.cwd(), 'certs', identification.data, clientCertName),
+                    clientKeyPath: path.join(process.cwd(), 'certs', identification.data, clientPrivateKeyName),
+                    remoteIp: host,
+                    remotePort: openVpnPort.data.port!
+                })
+                if (openVpnConfigFile.status != 200)
+                    return { data: {}, status: openVpnConfigFile.status, message: openVpnConfigFile.message }
+
+                //delete local file certificates
+                fs.rmSync(path.join(process.cwd(), 'certs', identification.data), { recursive: true, force: true });
+
+                return { data: { config: openVpnConfigFile.data }, status: 200, message: 'we have successfully setup openVpn on your router' }
 
             case 'l2tp':
                 return { data: {}, status: 200, message: 'we are working on new feature to create l2tp' }
