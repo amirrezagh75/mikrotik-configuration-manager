@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tunnel configuration</title>
+    <!-- Include Bootstrap and AdminLTE CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <style>
+        body {
+            background-color: #0B192C;
+            color: #FFFFFF;
+        }
+
+        .form-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #1E3E62;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-header {
+            background-color: #FF6500;
+            color: white;
+            padding: 10px;
+            border-radius: 28px 0;
+            text-align: center;
+            margin-bottom: 2vh;
+        }
+
+        .form-section {
+            margin-bottom: 2vh;
+            border: 2px solid #FF6500;
+            border-radius: 11px;
+            padding: 1vh;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            background-color: #0B192C;
+            color: #FFFFFF;
+            border: 1px solid #FFFFFF;
+        }
+
+        .form-group input::placeholder {
+            color: #FFFFFF;
+            opacity: 0.7;
+            /* To adjust placeholder visibility */
+        }
+
+        .form-group label {
+            color: #FF6500;
+        }
+
+        .btn-primary {
+            background-color: #FF6500;
+            border-color: #FF6500;
+        }
+
+        .btn-primary:hover {
+            background-color: #e65c00;
+            border-color: #e65c00;
+        }
+
+        .router-box {
+            background-color: #1E3E62;
+            border: 1px dashed #FF6500;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .router-box:hover {
+            background-color: #FF6500;
+            color: black;
+        }
+
+        .router-info {
+            margin: 1vh;
+            padding: 1vh;
+            border: 1px solid #62ff00;
+            border-radius: 8px;
+            height: 17vh;
+            width: 47vh;
+        }
+    </style>
+</head>
+
+<body class="hold-transition sidebar-mini">
+    <div class="row">
+
+        <div class="col-sm-4 mx-auto">
+            <div id="successAlert" class="alert alert-success alert-dismissible text-center"
+                style="display: none;"></div>
+            <div id="errorAlert" class="alert alert-danger alert-dismissible text-center"
+                style="display: none;"></div>
+
+            <div id="loadingIndicator" class="alert alert-info alert-dismissible text-center"
+                style="display: none;">Loading...</div>
+
+        </div>
+
+    </div>
+
+    <div class="wrapper">
+        <!-- Navbar and Sidebar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <!-- Other nav items -->
+        </nav>
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- Sidebar content -->
+        </aside>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <div class="content-header">
+                <div class="container-fluid">
+                </div>
+            </div>
+            <!-- Main content -->
+            <div class="content">
+                <div class="container-fluid">
+                    <div class="form-container">
+                        <!-- Form Header -->
+                        <div class="form-header">
+                            <h2>Tunnel Configuration</h2>
+                        </div>
+
+                        <!-- Tunnel Configuration Form -->
+                        <form id="tunnelForm">
+                            <!-- Tunnel Type Dropdown -->
+                            <div class="form-section">
+                                <div class="form-group">
+                                    <label for="tunnelType">Select Tunnel Type</label>
+                                    <select id="tunnelType" class="form-control" required>
+                                        <option value="eoip">EOIP</option>
+                                        <option value="vxlan">VXLAN</option>
+                                        <option value="ipip">IPIP</option>
+                                        <option value="gre">GRE</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Source Router Section -->
+                            <div class="form-section">
+                                <h3>Source Router</h3>
+                                <div class="router-box" id="sourcePublicBox">
+                                    <strong>Public</strong> <br> <span>Click to add</span>
+                                </div>
+                                <div id="sourcePublicFields" class="d-none router-info">
+                                    <div class="form-group">
+                                        <label for="sourcePublicAddress">Address</label>
+                                        <input type="text" id="sourcePublicAddress" class="form-control"
+                                            placeholder="Enter Public Address">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="sourcePublicPort">Port</label>
+                                        <input type="number" id="sourcePublicPort" class="form-control"
+                                            placeholder="Enter Public Port">
+                                    </div>
+                                </div>
+                                <div class="router-box" id="sourceLocalBox">
+                                    <strong>Local</strong> <br> <span>Click to add</span>
+                                </div>
+                                <div id="sourceLocalFields" class="d-none router-info">
+                                    <div class="form-group">
+                                        <label for="sourceLocalAddress">Address</label>
+                                        <input type="text" id="sourceLocalAddress" class="form-control"
+                                            placeholder="Enter Local Address">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="sourceLocalPort">Port</label>
+                                        <input type="number" id="sourceLocalPort" class="form-control"
+                                            placeholder="Enter Local Port">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="sourceUsername">Username</label>
+                                    <input type="text" id="sourceUsername" class="form-control"
+                                        placeholder="Enter Username" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="sourcePassword">Password</label>
+                                    <input type="password" id="sourcePassword" class="form-control"
+                                        placeholder="Enter Password" required>
+                                </div>
+                            </div>
+
+                            <!-- Destination Router Section -->
+                            <div class="form-section">
+                                <h3>Destination Router</h3>
+                                <div class="router-box" id="destinationPublicBox">
+                                    <strong>Public</strong> <br> <span>Click to add</span>
+                                </div>
+                                <div id="destinationPublicFields" class="d-none router-info">
+                                    <div class="form-group">
+                                        <label for="destinationPublicAddress">Address</label>
+                                        <input type="text" id="destinationPublicAddress" class="form-control"
+                                            placeholder="Enter Public Address">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="destinationPublicPort">Port</label>
+                                        <input type="number" id="destinationPublicPort" class="form-control"
+                                            placeholder="Enter Public Port">
+                                    </div>
+                                </div>
+                                <div class="router-box" id="destinationLocalBox">
+                                    <strong>Local</strong> <br> <span>Click to add</span>
+                                </div>
+                                <div id="destinationLocalFields" class="d-none router-info">
+                                    <div class="form-group">
+                                        <label for="destinationLocalAddress">Address</label>
+                                        <input type="text" id="destinationLocalAddress" class="form-control"
+                                            placeholder="Enter Local Address">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="destinationLocalPort">Port</label>
+                                        <input type="number" id="destinationLocalPort" class="form-control"
+                                            placeholder="Enter Local Port">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="destinationUsername">Username</label>
+                                    <input type="text" id="destinationUsername" class="form-control"
+                                        placeholder="Enter Username" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="destinationPassword">Password</label>
+                                    <input type="password" id="destinationPassword" class="form-control"
+                                        placeholder="Enter Password" required>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="form-section text-center" style="border: none;">
+                                <button type="submit" class="btn btn-primary btn-block">Create Tunnel</button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer and Scripts -->
+        <footer class="main-footer">
+            <!-- Footer content -->
+        </footer>
+    </div>
+
+    <!-- jQuery and Bootstrap scripts from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0/dist/js/adminlte.min.js"></script>
+
+    <script>
+        // Toggle input fields for public/local on click
+        $('#sourcePublicBox').click(function () {
+            $('#sourcePublicFields').toggleClass('d-none');
+        });
+        $('#sourceLocalBox').click(function () {
+            $('#sourceLocalFields').toggleClass('d-none');
+        });
+        $('#destinationPublicBox').click(function () {
+            $('#destinationPublicFields').toggleClass('d-none');
+        });
+        $('#destinationLocalBox').click(function () {
+            $('#destinationLocalFields').toggleClass('d-none');
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $('#tunnelForm').on('submit', function (e) {
+                e.preventDefault();
+
+                const formData = {
+                    tunnelType: $('#tunnelType').val(),
+                    source: {
+                        username: $('#sourceUsername').val(),
+                        password: $('#sourcePassword').val(),
+                        public: {
+                            address: $('#sourcePublicAddress').val(),
+                            port: parseInt($('#sourcePublicPort').val(), 10)
+                        },
+                        local: {
+                            address: $('#sourceLocalAddress').val(),
+                            port: parseInt($('#sourceLocalPort').val(), 10)
+                        }
+                    },
+                    destination: {
+                        username: $('#destinationUsername').val(),
+                        password: $('#destinationPassword').val(),
+                        public: {
+                            address: $('#destinationPublicAddress').val(),
+                            port: parseInt($('#destinationPublicPort').val(), 10)
+                        },
+                        local: {
+                            address: $('#destinationLocalAddress').val(),
+                            port: parseInt($('#destinationLocalPort').val(), 10)
+                        }
+                    }
+                };
+
+                console.log(formData);
+
+                $('.alert').hide();
+                $('#loadingIndicator').show();
+
+
+                $.ajax({
+                    url: '/user/createTunnel',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function (response) {
+                        // Hide loading indicator
+                        $('#loadingIndicator').hide();
+
+                        if (response.status === 200) {
+                            $('#successAlert').text(response.message || 'Tunnel created successfully!').show();
+
+                            console.log('Response data:', response.data);
+                        } else {
+                            $('#errorAlert').text(response.message || 'An error occurred.').show();
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        $('#loadingIndicator').hide();
+
+                        $('#errorAlert').text('An error occurred: ' + error).show();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
