@@ -402,7 +402,22 @@ export class MikrotikUtilService extends MikrotikService {
 
         } catch (error) {
             console.error(`mikrotik > services > mikrotikUtilsService > importCertificate > error: \n${error}`)
-            return { data: null, status: 500, message: 'failed to delete file' }
+    async removeCertificate(remoteFileName: string) {
+        try {
+            const connection = await this.connect();
+            if (connection.status !== 200)
+                return { data: '', status: connection.status, message: connection.message };
+
+            const response = await this.client.write('/certificate/import',[
+                `${remoteFileName}`,
+            ]);
+
+            console.log(`Certificate removed: ${remoteFileName}`);
+            return { data: response, status: 200, message: 'certificate removed' };
+
+        } catch (error) {
+            console.error(`mikrotik > services > mikrotikUtilsService > removeCertificate > error: \n${error}`)
+            return { data: null, status: 500, message: 'failed to remove certificate' }
 
         } finally {
             await this.disconnect()
