@@ -169,7 +169,7 @@
 
                 $.ajax({
                     url: `http://${address}:${port}/vcenter/clusterList`,
-                    method: 'GET',
+                    method: 'POST',
                     success: function(response) {
                         const clusters = response.data;
                         $('#clusterId').empty();
