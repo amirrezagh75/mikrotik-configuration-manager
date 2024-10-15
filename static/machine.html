@@ -166,10 +166,19 @@
             function fetchClusters() {
                 const address = $('#address').val();
                 const port = $('#port').val();
+                const username = $('#username').val()
+                const password = $('#password').val()
 
                 $.ajax({
-                    url: `http://${address}:${port}/vcenter/clusterList`,
+                    url: `/vcenter/clusterList`,
                     method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        address,
+                        port,
+                        username,
+                        password
+                    }),
                     success: function(response) {
                         const clusters = response.data;
                         $('#clusterId').empty();
@@ -219,7 +228,7 @@
             });
 
             // Fetch clusters when address or port is updated
-            $('#address, #port').on('change', fetchClusters);
+            $('#address, #port', '#username', '#password').on('change', fetchClusters);
         });
     </script>
 </body>
