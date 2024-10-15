@@ -78,7 +78,7 @@ export class MikrotikVpnService extends MikrotikService {
             if (connection.status != 200)
                 return { data: '', status: connection.status, message: connection.message }
 
-            const response = await this.client.write('/ppp/secret/add ', [
+            const response = await this.client.write('/ppp/secret/add', [
                 `=name=${input.username}`,
                 `=password=${input.password}`,
                 `=profile=${input?.profile ?? 'default'}`
