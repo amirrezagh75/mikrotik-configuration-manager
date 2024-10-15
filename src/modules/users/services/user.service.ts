@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import { ResponseDto } from '../../../common/DTO'
-import { CreateTunnelInterface, PublicOrLocalIp, RequestInterface } from '../types'
+import { CreateTunnelInterface, ICreateSecrete, PublicOrLocalIp, RequestInterface } from '../types'
 import { MikrotikService, MikrotikTunnelService, MikrotikUtilService, MikrotikVpnService } from '../../mikrotik/services'
 import { generateRandomIP, generateOpenVPNConfig, replaceLastSectionOfIp, toCamelCase, generateCertificates } from '../../../utils'
 import { CreateVpnInterface } from '../types/createVpn.interface'
@@ -19,13 +19,13 @@ export class UserServices {
         return { ...ipList };
     }
 
-    public validateConnection = async (input: RequestInterface) => {
+    public validateConnection = async (input: RequestInterface): Promise<ResponseDto> => {
         const mkService = new MikrotikService(input.address, input.port, input.username, input.password);
 
         return await mkService.validateConnection()
     }
 
-    public createTunnel = async (input: CreateTunnelInterface) => {
+    public createTunnel = async (input: CreateTunnelInterface): Promise<ResponseDto> => {
         const source = input.source;
         const destination = input.destination;
 
@@ -61,8 +61,8 @@ export class UserServices {
         if (selectedNetwork.status != 200)
             return { data: '', status: selectedNetwork.status, message: selectedNetwork.message };
 
-        const sourceTunnelIpAddress = replaceLastSectionOfIp(selectedNetwork.data, 1)
-        const destinationTunnelIpAddress = replaceLastSectionOfIp(selectedNetwork.data, 2)
+        const sourceTunnelIpAddress = replaceLastSectionOfIp(selectedNetwork.data!, 1)
+        const destinationTunnelIpAddress = replaceLastSectionOfIp(selectedNetwork.data!, 2)
 
         const sourceIp = source.public?.address || source.local?.address!;
         const destinationIp = destination.public?.address || destination.local?.address!;
