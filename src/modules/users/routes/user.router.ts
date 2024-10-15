@@ -1,7 +1,7 @@
 import express from 'express';
 import { Request, Response } from 'express'
 import { UserServices } from '../services';
-import { RequestInputSchema, CreateTunnelSchema, CreateTunnelInterface } from '../types'
+import { RequestInputSchema, CreateTunnelSchema, CreateTunnelInterface, RequestInterface, ICreateSecrete, CreateSecreteSchema } from '../types'
 import { validateRequest } from '../../../common/middlewares'
 import { CreateVpnInterface, CreateVpnSchema } from '../types/createVpn.interface';
 export const userRouter = express.Router();
@@ -44,3 +44,23 @@ userRouter.post('/createVpn', validateRequest(CreateVpnSchema),async (req: Reque
 
     res.json(tunnelCreationRes);
 } )
+
+userRouter.post('/profileList', validateRequest(RequestInputSchema),async (req: Request, res: Response) => {
+    const body: RequestInterface = req.body;
+
+    const userService = new UserServices();
+    const profilesRes = await userService.profileList(body);
+
+    res.json(profilesRes);
+} )
+
+userRouter.post('/createSecrete', validateRequest(CreateSecreteSchema),async (req: Request, res: Response) => {
+    const body: ICreateSecrete = req.body;
+
+    const userService = new UserServices();
+    const newSecreteRes = await userService.createSecrete(body);
+
+    res.json(newSecreteRes);
+} )
+
+

@@ -533,12 +533,28 @@ export class UserServices {
         }
     }
 
-    private async createOpenVpn(input: CreateVpnInterface) { }
+    public async createSecrete(input: ICreateSecrete): Promise<ResponseDto> {
+        const mkVpnService = new MikrotikVpnService(input.auth.address, input.auth.port, input.auth.username, input.auth.password)
+        const createSecrete = await mkVpnService.createNewSecrete({
+            username: input.user,
+            password: input.pass,
+            profile: input.profile
+        })
 
-    private async createL2tp(input: CreateVpnInterface) { }
+        if (createSecrete.status != 200)
+            return { data: {}, status: createSecrete.status, message: createSecrete.message }
 
-    private async createPpp(input: CreateVpnInterface) { }
+        return { data: createSecrete.data, status: 200, message: "" }
+    }
 
-    private async createPptp(input: CreateVpnInterface) { }
+    public async profileList(input: RequestInterface): Promise<ResponseDto> {
+        const mkVpnService = new MikrotikVpnService(input.address, input.port, input.username, input.password)
+        const profiles = await mkVpnService.listOfProfiles()
+
+        if (profiles.status != 200)
+            return { data: {}, status: profiles.status, message: profiles.message }
+
+        return { data: profiles.data, status: profiles.status, message: profiles.message }
+    }
 
 }
