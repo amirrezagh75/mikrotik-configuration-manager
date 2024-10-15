@@ -4,8 +4,7 @@ import { domainRegex, ipv4Regex } from '../../../utils';
 
 const portRange = { min: 1, max: 65535 };
 
-
-export const CreateMachineSchema = z.object({
+const AuthSchema = z.object({
     username: z.string(),
     password: z.string(),
     address: z.string().refine(
@@ -16,7 +15,11 @@ export const CreateMachineSchema = z.object({
     ),
     port: z.optional(z.number().min(portRange.min, { message: `Port must be at least ${portRange.min}` })
         .max(portRange.max, { message: `Port must be less than or equal to ${portRange.max}` })),
+})
 
+
+export const CreateMachineSchema = z.object({
+    auth:AuthSchema,
     name: z.string(),
     storage: z.number(),
     ram: z.number(),

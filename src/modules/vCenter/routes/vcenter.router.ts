@@ -22,7 +22,7 @@ vcenterRouter.post('/clusterList', validateRequest(GetClusterValueSchema),async 
 vcenterRouter.post('/createMachine', validateRequest(CreateMachineSchema),async (req: Request, res: Response) => {
     const body: ICreateMachine = req.body;
 
-    const vCenterService = new VcenterServices(body);
+    const vCenterService = new VcenterServices(body.auth);
     const tunnelCreationRes = await vCenterService.createMachine(body);
 
     res.json(tunnelCreationRes);
