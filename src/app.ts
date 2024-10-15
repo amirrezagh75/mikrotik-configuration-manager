@@ -19,6 +19,7 @@ app.use('/vcenter', vcenter.routes.vcenterRouter)
 app.use('/vpn', express.static(path.join(process.cwd(), 'static', 'vpn.html')));
 app.use('/tunnel', express.static(path.join(process.cwd(), 'static', 'tunnel.html')));
 app.use('/machine', express.static(path.join(process.cwd(), 'static', 'machine.html')));
+app.use('/secrete', express.static(path.join(process.cwd(), 'static', 'secrete.html')));
 
 
 
