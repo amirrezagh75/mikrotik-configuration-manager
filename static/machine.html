@@ -97,6 +97,10 @@
                             <label for="password">Password</label>
                             <input type="password" id="password" class="form-control" placeholder="Enter Password" required>
                         </div>
+
+                        <div class="form-section text-center" style="border: none;">
+                            <button type="submit" id="checkConnection" class="btn btn-primary btn-block">connect to VM</button>
+                        </div>
                     </div>
 
                     <!-- VM Configuration Section -->
@@ -162,12 +166,22 @@
 
     <script>
         $(document).ready(function() {
-            // Fetch and populate cluster list
+            
+            let address = $('#address').val();
+            let port = $('#port').val();
+            let username = $('#username').val()
+            let password = $('#password').val()
+
             function fetchClusters() {
-                const address = $('#address').val();
-                const port = $('#port').val();
-                const username = $('#username').val()
-                const password = $('#password').val()
+                address = $('#address').val();
+                port = $('#port').val();
+                username = $('#username').val()
+                password = $('#password').val()
+            }
+
+            $('#checkConnection').click(()=>{
+                if(!address || !port || !username || !password)
+                    alert('please fill all the Authentication section form!')
 
                 $.ajax({
                     url: `/vcenter/clusterList`,
@@ -190,7 +204,7 @@
                         console.error('Error fetching clusters', error);
                     }
                 });
-            }
+            })
 
             // Listen for create button click
             $('#createVmBtn').click(function(e) {
