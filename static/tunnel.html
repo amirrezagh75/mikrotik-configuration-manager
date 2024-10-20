@@ -282,33 +282,73 @@
             $('#tunnelForm').on('submit', function (e) {
                 e.preventDefault();
 
-                const formData = {
+                const sourceUserName = $('#sourceUsername').val()
+                const sourcePass = $('#sourcePassword').val()
+
+                const sourcePubAdd = $('#sourcePublicAddress').val()
+                const sourcePubPort = parseInt($('#sourcePublicPort').val(), 10)
+
+                const sourceLocalAdd = $('#sourceLocalAddress').val()
+                const sourceLocalPort = parseInt($('#sourceLocalPort').val(), 10)
+
+                const destinationUsername = $('#destinationUsername').val()
+                const destinationPass = $('#destinationPassword').val()
+
+                const destinationPubAdd= $('#destinationPublicAddress').val()
+                const destinationPubPort= parseInt($('#destinationPublicPort').val(), 10)
+
+                const destinationLocalAdd= $('#destinationLocalAddress').val()
+                const destinationLocalPort = parseInt($('#destinationLocalPort').val(), 10)
+
+                let formData = {
                     tunnelType: $('#tunnelType').val(),
-                    source: {
-                        username: $('#sourceUsername').val(),
-                        password: $('#sourcePassword').val(),
-                        public: {
-                            address: $('#sourcePublicAddress').val(),
-                            port: parseInt($('#sourcePublicPort').val(), 10)
-                        },
+                    source: {},
+                    destination: {}
+                };
+
+                if(sourceLocalAdd && sourceLocalPort)
+                    formData.source = {
+                        username: sourceUserName,
+                        password: sourcePass,
                         local: {
-                            address: $('#sourceLocalAddress').val(),
-                            port: parseInt($('#sourceLocalPort').val(), 10)
-                        }
-                    },
-                    destination: {
-                        username: $('#destinationUsername').val(),
-                        password: $('#destinationPassword').val(),
-                        public: {
-                            address: $('#destinationPublicAddress').val(),
-                            port: parseInt($('#destinationPublicPort').val(), 10)
-                        },
-                        local: {
-                            address: $('#destinationLocalAddress').val(),
-                            port: parseInt($('#destinationLocalPort').val(), 10)
+                            address: sourceLocalAdd,
+                            port: sourceLocalPort
                         }
                     }
-                };
+                else if(sourcePubAdd && sourcePubPort)
+                    formData.source = {
+                        username: sourceUserName,
+                        password: sourcePass,
+                        public: {
+                            address: sourcePubAdd,
+                            port: sourcePubPort
+                        }
+                    } 
+                else if(!sourceLocalAdd && !sourcePubAdd)
+                    alert("please insert one of the public or local addresses of the source router!")
+                
+                
+
+                    if(destinationLocalAdd && destinationLocalPort)
+                    formData.destination = {
+                        username: destinationUsername,
+                        password: destinationPass,
+                        local: {
+                            address: destinationLocalAdd,
+                            port: destinationLocalPort
+                        }
+                    }
+                else if(destinationPubAdd && destinationPubPort)
+                    formData.source = {
+                        username: destinationUsername,
+                        password: destinationPass,
+                        public: {
+                            address: destinationPubAdd,
+                            port: destinationPubPort
+                        }
+                    } 
+                else if(!destinationLocalAdd && !destinationPubAdd)
+                    alert("please insert one of the public or local addresses of the destination router!") 
 
                 console.log(formData);
 
