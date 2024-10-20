@@ -122,7 +122,7 @@ export class UserServices {
                 if (createEoipSource.status != 200 || createEoipDestination.status != 200)
                     return {
                         data: {}, status: 508,
-                        message: `couldn't create GRE tunnel ${createEoipSource.status != 200 ? 'source eoip' : ''} ${createEoipDestination.status != 200 ? "destination eoip" : ""}`
+                        message: `couldn't create eoip tunnel ${createEoipSource.status != 200 ? 'source eoip' : ''} ${createEoipDestination.status != 200 ? "destination eoip" : ""}`
                     };
 
 
@@ -164,7 +164,7 @@ export class UserServices {
                 if (createVxlanSource.status != 200 || createVxlanDestination.status != 200)
                     return {
                         data: {}, status: 508,
-                        message: `couldn't create GRE tunnel ${createVxlanSource.status != 200 ? 'source vxlan' : ''} ${createVxlanDestination.status != 200 ? "destination vxlan" : ""}`
+                        message: `couldn't create vxlan tunnel ${createVxlanSource.status != 200 ? 'source vxlan' : ''} ${createVxlanDestination.status != 200 ? "destination vxlan" : ""}`
                     };
 
                 const createVtepSource = await ipSelection.mkTunnelServiceSource.addVtepToVxlan(
@@ -185,7 +185,7 @@ export class UserServices {
                 if (createVtepSource.status != 200 || createVtepDestination.status != 200)
                     return {
                         data: {}, status: 508,
-                        message: `couldn't create GRE tunnel ${createVtepSource.status != 200 ? 'source vtep' : ''} ${createVtepDestination.status != 200 ? "destination vtep" : ""}`
+                        message: `couldn't create vxlan tunnel ${createVtepSource.status != 200 ? 'source vtep' : ''} ${createVtepDestination.status != 200 ? "destination vtep" : ""}`
                     };
 
                 const ipAssignVxlanSource = await ipSelection.mkTunnelServiceSource.setIpAddress(`vxlan_tunnel_to_${toCamelCase(destinationName.data)}_api`, sourceTunnelIpAddress, "24")
@@ -217,7 +217,7 @@ export class UserServices {
                 if (createIpipSource.status != 200 || createIpipDestination.status != 200)
                     return {
                         data: {}, status: 508,
-                        message: `couldn't create GRE tunnel ${createIpipSource.status != 200 ? 'source router' : ''} ${createIpipDestination.status != 200 ? "destination router" : ""}`
+                        message: `couldn't create ipip tunnel ${createIpipSource.status != 200 ? 'source router' : ''} ${createIpipDestination.status != 200 ? "destination router" : ""}`
                     };
 
 
