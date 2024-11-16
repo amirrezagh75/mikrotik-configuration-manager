@@ -1,0 +1,1 @@
+export { vcenterRouter } from './vcenter.router'

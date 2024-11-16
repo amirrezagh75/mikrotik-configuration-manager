@@ -4,6 +4,7 @@ import { UserServices } from '../services';
 import { RequestInputSchema, CreateTunnelSchema, CreateTunnelInterface } from '../types'
 import { validateRequest } from '../../../common/middlewares'
 import { CreateVpnInterface, CreateVpnSchema } from '../types/createVpn.interface';
+import { CreateVpnInterface, CreateVpnSchema } from '../types/createVpn.interface';
 export const userRouter = express.Router();
 
 
@@ -44,3 +45,5 @@ userRouter.post('/createVpn', validateRequest(CreateVpnSchema),async (req: Reque
 
     res.json(tunnelCreationRes);
 } )
+
+
